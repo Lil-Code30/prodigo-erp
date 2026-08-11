@@ -16,6 +16,15 @@ import {
   CheckCircle2,
   Loader2,
   AlertCircle,
+  Check,
+  Box,
+  Users,
+  Receipt,
+  Archive,
+  ShoppingCart,
+  Calculator,
+  UserRound,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,28 +37,67 @@ import {
 } from "@/components/ui/select";
 import Field from "@/features/auth/components/field";
 import {
+  companyInfoSchema,
   personalInfoSchema,
   registerSchema,
   toFieldErrors,
 } from "@/features/auth/schemas/auth-schema";
-import { useRegisterMutation } from "@/features/auth/hooks/use-auth";
+import { useModulesQuery, useRegisterMutation } from "@/features/auth/hooks/use-auth";
+import type { Module } from "@/features/auth/types";
 
 const COUNTRIES = [
-  "Cameroun",
-  "Côte d'Ivoire",
-  "Sénégal",
-  "Gabon",
-  "Togo",
-  "Bénin",
-  "Mali",
-  "Burkina Faso",
-  "RD Congo",
-  "Congo",
-  "Tchad",
-  "Niger",
-  "Guinée",
-  "Autre",
+  { name: "Cameroun", code: "CM" },
+  { name: "Côte d'Ivoire", code: "CI" },
+  { name: "Sénégal", code: "SN" },
+  { name: "Gabon", code: "GA" },
+  { name: "Togo", code: "TG" },
+  { name: "Bénin", code: "BJ" },
+  { name: "Mali", code: "ML" },
+  { name: "Burkina Faso", code: "BF" },
+  { name: "RD Congo", code: "CD" },
+  { name: "Congo", code: "CG" },
+  { name: "Tchad", code: "TD" },
+  { name: "Niger", code: "NE" },
+  { name: "Guinée", code: "GN" },
+  { name: "Autre", code: "OTHER" },
 ];
+
+const MODULE_ICONS: Record<string, LucideIcon> = {
+  CRM: Users,
+  INVOICE: Receipt,
+  INVENTORY: Archive,
+  SALES: ShoppingCart,
+  ACCOUNTING: Calculator,
+  HR: UserRound,
+};
+
+const STEPS = ["Compte", "Entreprise", "Modules"];
+
+interface RegisterFormValues {
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  companyName: string;
+  companySlug: string;
+  country: string;
+  selectedModules: Module[];
+}
+
+const INITIAL_VALUES: RegisterFormValues = {
+  firstName: "",
+  lastName: "",
+  username: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  companyName: "",
+  companySlug: "",
+  country: "CM",
+  selectedModules: [],
+};
 
 function slugify(value: string) {
   return value
@@ -85,24 +133,17 @@ const STRENGTH_CLASS: Record<Strength, { label: string; className: string }> = {
 export default function RegisterForm() {
   const router = useRouter();
   const registerMutation = useRegisterMutation();
+  const modulesQuery = useModulesQuery();
 
   const [step, setStep] = useState(1);
-  const [values, setValues] = useState({
-    firstName: "",
-    lastName: "",
-    username: "",
-    email: "",
-    password: "",
-    companyName: "",
-    companySlug: "",
-    country: "Cameroun",
-  });
+  const [values, setValues] = useState<RegisterFormValues>(INITIAL_VALUES);
   const [slugTouched, setSlugTouched] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  function update(field: keyof typeof values, value: string) {
+  function update(field: Exclude<keyof RegisterFormValues, "selectedModules">, value: string) {
     setValues((v) => {
       const next = { ...v, [field]: value };
       if (field === "companyName" && !slugTouched) {
@@ -111,6 +152,23 @@ export default function RegisterForm() {
       return next;
     });
     if (errors[field]) setErrors((e) => ({ ...e, [field]: undefined }));
+  }
+
+  function toggleModule(module: Module) {
+    setValues((v) => {
+      const alreadySelected = v.selectedModules.some(
+        (m) => m.moduleId === module.moduleId,
+      );
+      return {
+        ...v,
+        selectedModules: alreadySelected
+          ? v.selectedModules.filter((m) => m.moduleId !== module.moduleId)
+          : [...v.selectedModules, module],
+      };
+    });
+    if (errors.selectedModules) {
+      setErrors((e) => ({ ...e, selectedModules: undefined }));
+    }
   }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -123,6 +181,7 @@ export default function RegisterForm() {
         username: values.username,
         email: values.email,
         password: values.password,
+        confirmPassword: values.confirmPassword,
       });
       if (!parsed.success) {
         setErrors(toFieldErrors(parsed.error));
@@ -130,6 +189,21 @@ export default function RegisterForm() {
       }
       setErrors({});
       setStep(2);
+      return;
+    }
+
+    if (step === 2) {
+      const parsed = companyInfoSchema.safeParse({
+        companyName: values.companyName,
+        companySlug: values.companySlug,
+        country: values.country,
+      });
+      if (!parsed.success) {
+        setErrors(toFieldErrors(parsed.error));
+        return;
+      }
+      setErrors({});
+      setStep(3);
       return;
     }
 
@@ -147,6 +221,7 @@ export default function RegisterForm() {
 
   const submitting = registerMutation.isPending;
   const strength = passwordStrength(values.password);
+  const modules = modulesQuery.data ?? [];
 
   if (success) {
     return (
@@ -180,18 +255,28 @@ export default function RegisterForm() {
       <p className="auth-subtitle">
         {step === 1
           ? "Commencez par vos informations personnelles."
-          : "Parlez-nous de votre entreprise."}
+          : step === 2
+            ? "Parlez-nous de votre entreprise."
+            : "Choisissez les modules de votre espace."}
       </p>
 
       <div className="step-bars">
-        <div className="step-bar step-bar--active" />
-        <div className={`step-bar ${step === 2 ? "step-bar--active" : ""}`} />
+        {STEPS.map((_, i) => (
+          <div
+            key={i}
+            className={`step-bar ${i + 1 <= step ? "step-bar--active" : ""}`}
+          />
+        ))}
       </div>
       <div className="step-labels">
-        <span className="step-labels__item--active">1. Compte</span>
-        <span className={step === 2 ? "step-labels__item--active" : undefined}>
-          2. Entreprise
-        </span>
+        {STEPS.map((label, i) => (
+          <span
+            key={label}
+            className={i + 1 <= step ? "step-labels__item--active" : undefined}
+          >
+            {i + 1}. {label}
+          </span>
+        ))}
       </div>
 
       {registerMutation.isError && (
@@ -202,7 +287,7 @@ export default function RegisterForm() {
       )}
 
       <form onSubmit={handleSubmit} noValidate>
-        {step === 1 ? (
+        {step === 1 && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Field label="Prénom" htmlFor="firstName" error={errors.firstName}>
@@ -324,12 +409,50 @@ export default function RegisterForm() {
               )}
             </Field>
 
+            <Field
+              label="Confirmer le mot de passe"
+              htmlFor="confirmPassword"
+              error={errors.confirmPassword}
+            >
+              <div className="relative">
+                <Lock className="input-icon h-4 w-4" />
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  maxLength={100}
+                  value={values.confirmPassword}
+                  onChange={(e) => update("confirmPassword", e.target.value)}
+                  className="pl-10 pr-10"
+                  placeholder="••••••••"
+                  aria-invalid={errors.confirmPassword ? true : undefined}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((s) => !s)}
+                  className="input-toggle"
+                  aria-label={
+                    showConfirmPassword
+                      ? "Masquer le mot de passe"
+                      : "Afficher le mot de passe"
+                  }
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </Field>
+
             <Button type="submit" size="lg" className="w-full">
               Continuer
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
-        ) : (
+        )}
+
+        {step === 2 && (
           <div className="space-y-4">
             <Field
               label="Nom de l'entreprise"
@@ -391,8 +514,8 @@ export default function RegisterForm() {
                   </SelectTrigger>
                   <SelectContent>
                     {COUNTRIES.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
+                      <SelectItem key={c.code} value={c.code}>
+                        {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -405,22 +528,116 @@ export default function RegisterForm() {
                 <ArrowLeft className="h-4 w-4" />
                 Retour
               </Button>
-              <Button
-                type="submit"
-                size="lg"
-                className="flex-1"
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Création...
-                  </>
-                ) : (
-                  "Créer mon compte"
-                )}
+              <Button type="submit" size="lg" className="flex-1">
+                Continuer
+                <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4">
+            {modulesQuery.isPending && (
+              <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Chargement des modules...
+              </div>
+            )}
+
+            {modulesQuery.isError && (
+              <div className="auth-alert auth-alert--error" role="alert">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                Impossible de charger les modules.{" "}
+                <button
+                  type="button"
+                  className="auth-link underline"
+                  onClick={() => modulesQuery.refetch()}
+                >
+                  Réessayer
+                </button>
+              </div>
+            )}
+
+            {modulesQuery.isSuccess && (
+              <>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {modules.map((module) => {
+                    const selected = values.selectedModules.some(
+                      (m) => m.moduleId === module.moduleId,
+                    );
+                    const Icon = MODULE_ICONS[module.moduleKey] ?? Box;
+                    return (
+                      <button
+                        key={module.moduleId}
+                        type="button"
+                        onClick={() => toggleModule(module)}
+                        aria-pressed={selected}
+                        className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+                          selected
+                            ? "border-primary bg-[var(--color-primary-light)]"
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
+                      >
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                            selected
+                              ? "bg-primary text-white"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span className="flex-1 text-sm font-medium text-gray-900">
+                          {module.moduleName}
+                        </span>
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+                            selected
+                              ? "border-primary bg-primary"
+                              : "border-gray-300"
+                          }`}
+                        >
+                          {selected && <Check className="h-3 w-3 text-white" />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {errors.selectedModules && (
+                  <p className="text-xs font-medium text-destructive">
+                    {errors.selectedModules}
+                  </p>
+                )}
+
+                <div className="flex gap-3 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(2)}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Retour
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="flex-1"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Création...
+                      </>
+                    ) : (
+                      "Créer mon compte"
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </form>

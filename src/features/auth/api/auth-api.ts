@@ -7,11 +7,23 @@ import type {
 import type {
   LoginResponse,
   MessageResponse,
+  Module,
   RegisterResponse,
 } from "@/features/auth/types";
 
 // PLACEHOLDER — endpoints and payloads are not final.
 // Adjust the paths below to match your Spring Boot API contract once available.
+
+// PLACEHOLDER — replace with GET /modules from the Spring Boot API.
+const PLACEHOLDER_MODULES: Module[] = [
+  { moduleId: 1, moduleName: "Gestion de la relation client", moduleKey: "CRM" },
+  { moduleId: 2, moduleName: "Facturation", moduleKey: "INVOICE" },
+  { moduleId: 3, moduleName: "Gestion des stocks", moduleKey: "INVENTORY" },
+  { moduleId: 4, moduleName: "Commandes et ventes", moduleKey: "SALES" },
+  { moduleId: 5, moduleName: "Comptabilité", moduleKey: "ACCOUNTING" },
+  { moduleId: 6, moduleName: "Ressources humaines", moduleKey: "HR" },
+];
+
 export const authApi = {
   async login(input: LoginInput): Promise<LoginResponse> {
     const { data } = await httpClient.post<LoginResponse>("/auth/login", {
@@ -27,6 +39,12 @@ export const authApi = {
       input,
     );
     return data;
+  },
+
+  async fetchModules(): Promise<Module[]> {
+    // const { data } = await httpClient.get<Module[]>("/modules");
+    // return data;
+    return PLACEHOLDER_MODULES;
   },
 
   async forgotPassword(input: ForgotPasswordInput): Promise<MessageResponse> {

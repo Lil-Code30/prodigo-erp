@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { authApi } from "@/features/auth/api/auth-api";
 import type {
   ForgotPasswordInput,
@@ -17,6 +17,14 @@ export function useLoginMutation() {
 export function useRegisterMutation() {
   return useMutation({
     mutationFn: (input: RegisterInput) => authApi.register(input),
+  });
+}
+
+export function useModulesQuery(enabled = true) {
+  return useQuery({
+    queryKey: ["modules"],
+    queryFn: authApi.fetchModules,
+    enabled,
   });
 }
 

@@ -6,6 +6,12 @@ export interface AuthUser {
   username: string;
 }
 
+export interface Module {
+  moduleId: number;
+  moduleName: string;
+  moduleKey: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
   refreshToken?: string;
