@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "skill": {
+      "prodigo-design-system": "allow",
+      "frontend-architecture": "allow",
+      "frontend-review": "allow",
+      "authentication-ui": "allow",
+      "erp-ui": "allow",
+      "landing-page": "allow",
+      "responsive-design": "allow",
+      "*": "ask"
+    }
+  }
+}
