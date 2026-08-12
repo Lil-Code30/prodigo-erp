@@ -5,14 +5,10 @@ import type {
   RegisterInput,
 } from "@/features/auth/schemas/auth-schema";
 import type {
-  LoginResponse,
+  AuthResponse,
   MessageResponse,
   Module,
-  RegisterResponse,
 } from "@/features/auth/types";
-
-// PLACEHOLDER — endpoints and payloads are not final.
-// Adjust the paths below to match your Spring Boot API contract once available.
 
 // PLACEHOLDER — replace with GET /modules from the Spring Boot API.
 const PLACEHOLDER_MODULES: Module[] = [
@@ -25,16 +21,16 @@ const PLACEHOLDER_MODULES: Module[] = [
 ];
 
 export const authApi = {
-  async login(input: LoginInput): Promise<LoginResponse> {
-    const { data } = await httpClient.post<LoginResponse>("/auth/login", {
-      identifier: input.identifier,
+  async login(input: LoginInput): Promise<AuthResponse> {
+    const { data } = await httpClient.post<AuthResponse>("/auth/login", {
+      username: input.username,
       password: input.password,
     });
     return data;
   },
 
-  async register(input: RegisterInput): Promise<RegisterResponse> {
-    const { data } = await httpClient.post<RegisterResponse>(
+  async register(input: RegisterInput): Promise<AuthResponse> {
+    const { data } = await httpClient.post<AuthResponse>(
       "/auth/register",
       input,
     );

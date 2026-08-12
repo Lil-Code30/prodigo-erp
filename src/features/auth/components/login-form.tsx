@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Mail,
+  User,
   Lock,
   Eye,
   EyeOff,
@@ -23,8 +23,9 @@ import { useAuthStore } from "@/features/auth/stores/auth-store";
 export default function LoginForm() {
   const router = useRouter();
   const loginMutation = useLoginMutation();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
-  const [values, setValues] = useState({ identifier: "", password: "" });
+  const [values, setValues] = useState({ username: "", password: "" });
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -47,10 +48,7 @@ export default function LoginForm() {
 
     loginMutation.mutate(parsed.data, {
       onSuccess: (data) => {
-        useAuthStore.getState().setSession({
-          user: data.user,
-          accessToken: data.accessToken,
-        });
+        setAuth(data);
         setSuccess(true);
         setTimeout(() => router.push("/dashboard"), 600);
       },
@@ -84,21 +82,21 @@ export default function LoginForm() {
 
       <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-4">
         <Field
-          label="E-mail ou nom d'utilisateur"
-          htmlFor="identifier"
-          error={errors.identifier}
+          label="Nom d'utilisateur"
+          htmlFor="username"
+          error={errors.username}
         >
           <div className="relative">
-            <Mail className="input-icon h-4 w-4" />
+            <User className="input-icon h-4 w-4" />
             <Input
-              id="identifier"
+              id="username"
               autoComplete="username"
-              value={values.identifier}
-              onChange={(e) => update("identifier", e.target.value)}
+              value={values.username}
+              onChange={(e) => update("username", e.target.value)}
               className="pl-10"
-              placeholder="jean.fotso@entreprise.cm"
+              placeholder="jfotso"
               disabled={submitting || success}
-              aria-invalid={errors.identifier ? true : undefined}
+              aria-invalid={errors.username ? true : undefined}
             />
           </div>
         </Field>

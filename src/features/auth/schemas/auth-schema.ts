@@ -1,15 +1,9 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  identifier: z
+  username: z
     .string()
-    .min(1, "Indiquez votre e-mail ou votre nom d'utilisateur.")
-    .refine(
-      (value) =>
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
-        /^[a-zA-Z0-9_.-]{2,}$/.test(value),
-      "Identifiant invalide.",
-    ),
+    .min(1, "Indiquez votre nom d'utilisateur."),
   password: z.string().min(1, "Le mot de passe est requis."),
   remember: z.boolean().default(true),
 });

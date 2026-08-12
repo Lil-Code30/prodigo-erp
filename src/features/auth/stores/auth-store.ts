@@ -1,37 +1,82 @@
 "use client";
 
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import type { AuthUser } from "@/features/auth/types";
+import { persist, createJSONStorage } from "zustand/middleware";
+import type { AuthResponse, Authority } from "@/features/auth/types";
 
 interface AuthState {
-  user: AuthUser | null;
+  userId: number | null;
+  tenantSlug: string | null;
   accessToken: string | null;
+  roles: string[];
+  permissions: string[];
   isAuthenticated: boolean;
-  setSession: (payload: { user: AuthUser; accessToken: string }) => void;
-  setUser: (user: AuthUser) => void;
-  logout: () => void;
+
+  setAuth: (response: AuthResponse) => void;
+  clearAuth: () => void;
+  hasRole: (role: string) => boolean;
+  hasPermission: (permission: string) => boolean;
+  hasAnyRole: (...roles: string[]) => boolean;
 }
+
+function splitAuthorities(authorities: Authority[]) {
+  const roles: string[] = [];
+  const permissions: string[] = [];
+
+  for (const { authority } of authorities) {
+    if (authority.startsWith("ROLE_")) {
+      roles.push(authority.slice(5));
+    } else if (authority.startsWith("PERM_")) {
+      permissions.push(authority.slice(5));
+    }
+  }
+
+  return { roles, permissions };
+}
+
+const initialState = {
+  userId: null,
+  tenantSlug: null,
+  accessToken: null,
+  roles: [],
+  permissions: [],
+  isAuthenticated: false,
+};
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
-      user: null,
-      accessToken: null,
-      isAuthenticated: false,
-      setSession: ({ user, accessToken }) =>
-        set({ user, accessToken, isAuthenticated: true }),
-      setUser: (user) => set({ user }),
-      logout: () =>
-        set({ user: null, accessToken: null, isAuthenticated: false }),
+    (set, get) => ({
+      ...initialState,
+
+      setAuth: (response) => {
+        const { roles, permissions } = splitAuthorities(response.authorities);
+        set({
+          userId: response.userId,
+          tenantSlug: response.tenantSlug,
+          accessToken: response.accessToken,
+          roles,
+          permissions,
+          isAuthenticated: true,
+        });
+      },
+
+      clearAuth: () => set(initialState),
+
+      hasRole: (role) => get().roles.includes(role),
+      hasPermission: (permission) => get().permissions.includes(permission),
+      hasAnyRole: (...roles) => roles.some((r) => get().roles.includes(r)),
     }),
     {
       name: "prodigo-auth",
-      storage: createJSONStorage(() => {
-        if (typeof window === "undefined") {
-          throw new Error("localStorage is unavailable on the server");
-        }
-        return localStorage;
+      storage: createJSONStorage(() => localStorage),
+      // accessToken is intentionally left out of persisted storage.
+      // On reload, isAuthenticated + userId + tenantSlug survive, but
+      // accessToken comes back null — use that as the trigger to silently
+      // call /auth/refresh on app bootstrap and repopulate it via setAuth().
+      partialize: (state) => ({
+        userId: state.userId,
+        tenantSlug: state.tenantSlug,
+        isAuthenticated: state.isAuthenticated,
       }),
     },
   ),

@@ -1,10 +1,9 @@
 import axios from "axios";
-import { env } from "@/config/env";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
 import { toApiError } from "@/lib/http/api-error";
 
 export const httpClient = axios.create({
-  baseURL: env.apiBaseUrl,
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   timeout: 15_000,
   headers: {
     "Content-Type": "application/json",
@@ -26,7 +25,7 @@ httpClient.interceptors.response.use(
       const url = error.config?.url ?? "";
       const isAuthCall = url.includes("/auth/login") || url.includes("/auth/refresh");
       if (!isAuthCall) {
-        useAuthStore.getState().logout();
+        useAuthStore.getState().clearAuth();
         if (typeof window !== "undefined") {
           window.location.assign(new URL("/login", window.location.origin).toString());
         }
