@@ -42,8 +42,12 @@ import {
   registerSchema,
   toFieldErrors,
 } from "@/features/auth/schemas/auth-schema";
-import { useModulesQuery, useRegisterMutation } from "@/features/auth/hooks/use-auth";
-import type { Module } from "@/features/auth/types";
+import {
+  useModulesQuery,
+  useRegisterMutation,
+} from "@/features/auth/hooks/use-auth";
+import { useAuthStore } from "@/features/auth/stores/auth-store";
+import type { SelectedModule } from "@/features/auth/types";
 
 const COUNTRIES = [
   { name: "Cameroun", code: "CM" },
@@ -83,7 +87,7 @@ interface RegisterFormValues {
   companyName: string;
   companySlug: string;
   country: string;
-  selectedModules: Module[];
+  selectedModules: SelectedModule[];
 }
 
 const INITIAL_VALUES: RegisterFormValues = {
@@ -134,6 +138,7 @@ export default function RegisterForm() {
   const router = useRouter();
   const registerMutation = useRegisterMutation();
   const modulesQuery = useModulesQuery();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const [step, setStep] = useState(1);
   const [values, setValues] = useState<RegisterFormValues>(INITIAL_VALUES);
@@ -143,7 +148,10 @@ export default function RegisterForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  function update(field: Exclude<keyof RegisterFormValues, "selectedModules">, value: string) {
+  function update(
+    field: Exclude<keyof RegisterFormValues, "selectedModules">,
+    value: string,
+  ) {
     setValues((v) => {
       const next = { ...v, [field]: value };
       if (field === "companyName" && !slugTouched) {
@@ -154,7 +162,7 @@ export default function RegisterForm() {
     if (errors[field]) setErrors((e) => ({ ...e, [field]: undefined }));
   }
 
-  function toggleModule(module: Module) {
+  function toggleModule(module: SelectedModule) {
     setValues((v) => {
       const alreadySelected = v.selectedModules.some(
         (m) => m.moduleId === module.moduleId,
@@ -215,7 +223,11 @@ export default function RegisterForm() {
     setErrors({});
 
     registerMutation.mutate(parsed.data, {
-      onSuccess: () => setSuccess(true),
+      onSuccess: (data) => {
+        setAuth(data);
+        setSuccess(true);
+        setTimeout(() => router.push("/dashboard"), 600);
+      },
     });
   }
 
@@ -235,14 +247,14 @@ export default function RegisterForm() {
         <p className="success-body">
           Bienvenue sur Prodigo, {values.firstName || "à vous"}. Votre espace{" "}
           <span className="success-strong">{values.companyName}</span> est prêt.
-          Vous pouvez maintenant vous connecter.
+          Redirection vers votre tableau de bord...
         </p>
         <Button
           size="lg"
           className="mt-6 w-full"
-          onClick={() => router.push("/login")}
+          onClick={() => router.push("/dashboard")}
         >
-          Se connecter
+          Aller au tableau de bord
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
@@ -280,8 +292,8 @@ export default function RegisterForm() {
       </div>
 
       {registerMutation.isError && (
-        <div className="auth-alert auth-alert--error" role="alert">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+        <div className="auth-alert auth-alert--error my-2" role="alert">
+          <AlertCircle className="h-4 w-4  flex-shrink-0" />
           {registerMutation.error.message}
         </div>
       )}
@@ -290,7 +302,11 @@ export default function RegisterForm() {
         {step === 1 && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Prénom" htmlFor="firstName" error={errors.firstName}>
+              <Field
+                label="Prénom"
+                htmlFor="firstName"
+                error={errors.firstName}
+              >
                 <Input
                   id="firstName"
                   maxLength={150}
@@ -395,7 +411,9 @@ export default function RegisterForm() {
                       <span
                         key={i}
                         className={`strength-bar ${
-                          i <= strength ? STRENGTH_CLASS[strength].className : ""
+                          i <= strength
+                            ? STRENGTH_CLASS[strength].className
+                            : ""
                         }`}
                       />
                     ))}
@@ -524,7 +542,11 @@ export default function RegisterForm() {
             </Field>
 
             <div className="flex gap-3 pt-1">
-              <Button type="button" variant="outline" onClick={() => setStep(1)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setStep(1)}
+              >
                 <ArrowLeft className="h-4 w-4" />
                 Retour
               </Button>

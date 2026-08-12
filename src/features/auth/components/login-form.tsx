@@ -16,7 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import Field from "@/features/auth/components/field";
-import { loginSchema, toFieldErrors } from "@/features/auth/schemas/auth-schema";
+import {
+  loginSchema,
+  toFieldErrors,
+} from "@/features/auth/schemas/auth-schema";
 import { useLoginMutation } from "@/features/auth/hooks/use-auth";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
 
@@ -59,23 +62,21 @@ export default function LoginForm() {
 
   return (
     <>
-      <h1 className="auth-title text-4xl font-bold">
-        Content de vous revoir
-      </h1>
+      <h1 className="auth-title text-4xl font-bold">Content de vous revoir</h1>
       <p className="auth-subtitle">
         Connectez-vous pour accéder à votre espace.
       </p>
 
       {loginMutation.isError && (
         <div className="auth-alert auth-alert--error" role="alert">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <AlertCircle className="h-4 w-4 my-2 flex-shrink-0" />
           {loginMutation.error.message}
         </div>
       )}
 
       {success && (
         <div className="auth-alert auth-alert--success" role="status">
-          <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+          <CheckCircle2 className="h-4 w-4 my-2 flex-shrink-0" />
           Connexion réussie. Redirection vers votre tableau de bord...
         </div>
       )}
@@ -101,11 +102,7 @@ export default function LoginForm() {
           </div>
         </Field>
 
-        <Field
-          label="Mot de passe"
-          htmlFor="password"
-          error={errors.password}
-        >
+        <Field label="Mot de passe" htmlFor="password" error={errors.password}>
           <div className="relative">
             <Lock className="input-icon h-4 w-4" />
             <Input

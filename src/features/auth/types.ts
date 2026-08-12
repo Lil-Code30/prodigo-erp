@@ -9,7 +9,7 @@ export interface AuthResponse {
   authorities: Authority[];
 }
 
-export interface Module {
+export interface SelectedModule {
   moduleId: number;
   moduleName: string;
   moduleKey: string;
