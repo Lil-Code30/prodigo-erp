@@ -17,9 +17,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prodigo ERP",
+  title: {
+    default: "Prodigo ERP — Toute votre entreprise, dans un seul tableau de bord",
+    template: "%s — Prodigo ERP",
+  },
   description:
-    "Clients, stock, commandes, factures et paiements mobile — toute votre entreprise dans un seul tableau de bord.",
+    "Clients, stock, commandes, factures et paiements mobile — toute votre entreprise dans un seul tableau de bord. L'ERP cloud pour les entreprises africaines.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
